@@ -3,6 +3,8 @@ import { Award, ShieldCheck, Heart, Users, Target, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import CTASection from "@/components/CTASection";
+import FAQSection from "@/components/FAQSection";
+import { aboutFaqs } from "@/lib/faqData";
 
 const ABOUT_IMAGE = "https://media.base44.com/images/public/69d94b2ecf7e326359363f38/8084cf4d5_about-page.png";
 
@@ -111,6 +113,7 @@ export default function About() {
         </div>
       </section>
 
+      <FAQSection faqs={aboutFaqs} />
       <CTASection />
     </div>
   );

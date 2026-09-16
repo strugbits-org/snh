@@ -138,12 +138,14 @@ export default function ServiceQuoteForm({ slug }) {
       const resData = await response.json();
       if (resData.success) {
         setErrors({});
-        // form_submit keeps parity with the contact and lead forms; form_name
-        // is what lets you tell service quotes apart from them in GA4.
-        trackEvent("form_submit", {
-          form_name: "Service Quote",
+        const serviceEvents = {
+          repair: "repair_service_request",
+          winterization: "winterization_request",
+        };
+        trackEvent(serviceEvents[slug] || "service_quote_submit", {
+          form_name: `Service Quote - ${slug}`,
           service_needed: form.service_needed,
-          service_page: `/services/${slug}`,
+          page_location: window.location.href,
         });
         router.push("/thank-you");
       } else {

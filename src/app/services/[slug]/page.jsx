@@ -7,6 +7,8 @@ import { FadeInOnLoad, FadeInOnView } from "@/components/services/FadeIn";
 import UpgradeCheckoutCta from "@/components/services/UpgradeCheckoutCta";
 import ServiceQuoteForm from "@/components/services/ServiceQuoteForm";
 import { getServiceContent } from "@/lib/wixServices";
+import FAQSection from "@/components/FAQSection";
+import { serviceFaqsBySlug } from "@/lib/faqData";
 
 const HERO_IMAGE = "/images/services/golf-card-services.webp";
 
@@ -227,6 +229,10 @@ export default async function ServiceDetail({ params }) {
       {/* On-page conversion path. Every other CTA on this page sends the
           visitor to /contact, which costs a click on the most engaged traffic
           on the site — this captures them where they already are. */}
+      {serviceFaqsBySlug[slug] && (
+        <FAQSection faqs={serviceFaqsBySlug[slug]} variant="services" />
+      )}
+
       <ServiceQuoteForm slug={slug} />
 
       <CTASection />

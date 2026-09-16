@@ -6,6 +6,8 @@ import WhyChooseUs from "@/components/home/WhyChooseUs";
 import GoogleReviews from "@/components/home/GoogleReviews";
 
 import CTASection from "@/components/CTASection";
+import FAQSection from "@/components/FAQSection";
+import { homeFaqs } from "@/lib/faqData";
 
 export default function Home() {
   const schema = {
@@ -87,6 +89,7 @@ export default function Home() {
       <ServicesOverview />
       <WhyChooseUs />
 
+      <FAQSection faqs={homeFaqs} />
       <GoogleReviews />
       <CTASection />
     </div>

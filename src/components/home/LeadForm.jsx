@@ -261,10 +261,11 @@ export default function LeadForm() {
       const resData = await response.json();
 
       if (resData.success || resData.contactId) {
-        // Send the GA4 conversion event once per successful submission,
-        // then redirect to the thank-you page.
         if (typeof window !== "undefined" && typeof window.gtag === "function") {
-          window.gtag("event", "form_submit");
+          window.gtag("event", "book_appointment", {
+            form_name: "Book Appointment",
+            page_location: window.location.href,
+          });
         }
         router.push("/thank-you");
       } else {

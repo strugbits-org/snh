@@ -6,6 +6,8 @@ import { CalendarDays, Users, MapPin, PartyPopper, TreePine, Building, ArrowRigh
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import CTASection from "@/components/CTASection";
+import FAQSection from "@/components/FAQSection";
+import { rentalFaqs } from "@/lib/faqData";
 
 const RENTALS_HERO = "https://media.base44.com/images/public/69d94b2ecf7e326359363f38/65d314f70_generated_a29c42be.png";
 
@@ -140,6 +142,7 @@ export default function Rentals() {
         </div>
       </section>
 
+      <FAQSection faqs={rentalFaqs} />
       <CTASection />
     </div>
   );
