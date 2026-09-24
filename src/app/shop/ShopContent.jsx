@@ -12,6 +12,7 @@ function ShopBody() {
   const searchParams = useSearchParams();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [brands, setBrands] = useState([]);
   const [seatFilter, setSeatFilter] = useState("All");
   const [makeFilter, setMakeFilter] = useState("All");
@@ -31,10 +32,14 @@ function ShopBody() {
     }
   }, [searchParams, brands]);
 
-  useEffect(() => {
+  const fetchProducts = () => {
     setLoading(true);
+    setFetchError(false);
     fetch("/api/products")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then((res) => {
         const rawItems = res.products || [];
         const collections = res.collections || [];
@@ -66,9 +71,16 @@ function ShopBody() {
           if (matchedBrand) setMakeFilter(matchedBrand);
         }
       })
-      .catch((err) => console.error("Error fetching products:", err))
+      .catch((err) => {
+        console.error("Error fetching products:", err);
+        setFetchError(true);
+      })
       .finally(() => setLoading(false));
-  }, []);
+  };
+
+  useEffect(() => { fetchProducts(); }, []);
+
+  const hasAccessories = products.some((p) => p.isAccessory);
 
   const categoryProducts = products.filter((p) => {
     return categoryFilter === "Golf Carts" ? !p.isAccessory : p.isAccessory;
@@ -157,22 +169,25 @@ function ShopBody() {
           </button>
         </div>
 
-        {/* Category Selection */}
-        <div className="flex justify-center gap-4 mb-8">
-          {["Golf Carts", "Accessories"].map((cat) => (
-            <button
-              key={cat}
-              onClick={() => handleCategoryChange(cat)}
-              className={`px-8 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-sm border ${
-                categoryFilter === cat ?
-                  "bg-accent  text-white border-accent scale-105"
-                : "bg-white text-muted-foreground border-border hover:border-accent hover:text-accent"
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
+        {/* Category Selection — only show tabs when accessories exist */}
+        {hasAccessories && (
+          <div className="flex justify-center gap-4 mb-8">
+            {["Golf Carts", "Accessories"].map((cat) => (
+              <button
+                key={cat}
+                onClick={() => handleCategoryChange(cat)}
+                disabled={loading}
+                className={`px-8 py-2.5 rounded-full font-semibold transition-all duration-300 shadow-sm border ${
+                  categoryFilter === cat ?
+                    "bg-accent  text-white border-accent scale-105"
+                  : "bg-white text-muted-foreground border-border hover:border-accent hover:text-accent"
+                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
 
         {categoryFilter === "Golf Carts" && (
           <ShopFilterBar
@@ -193,9 +208,19 @@ function ShopBody() {
           <div className="flex justify-center py-32">
             <Loader2 className="w-8 h-8 animate-spin text-accent" />
           </div>
+        : fetchError ?
+          <div className="text-center py-32">
+            <p className="text-muted-foreground mb-4">Unable to load products. Please try again.</p>
+            <button
+              onClick={fetchProducts}
+              className="px-6 py-2.5 bg-accent text-white font-semibold rounded-full hover:bg-accent/90 transition-colors"
+            >
+              Retry
+            </button>
+          </div>
         : filtered.length === 0 ?
           <div className="text-center py-32 text-muted-foreground">
-            {categoryFilter === "Accessories" ? "No accessories match your filters." : "No carts match your filters."}
+            No {categoryFilter === "Accessories" ? "accessories" : "carts"} match your filters.
           </div>
         : <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filtered.map((cart, i) => (

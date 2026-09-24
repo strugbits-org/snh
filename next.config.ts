@@ -110,12 +110,13 @@ const staticRedirects: Redirect[] = [
   { source: "/contact.html", destination: "/contact", permanent: true },
   { source: "/rentals.html", destination: "/rentals", permanent: true },
   // There is no /services overview page by design, so the old services page
-  // lands on Repair & Maintenance — the closest equivalent of that content.
+  // and the bare /services path both land on Repair & Maintenance.
   {
     source: "/services.html",
     destination: "/services/repair",
     permanent: true,
   },
+  { source: "/services", destination: "/services/repair", permanent: true },
   { source: "/shop.html", destination: "/shop", permanent: true },
   // Same two pages were also linked under the old /products/ prefix. These
   // must precede the /products/:path* wildcard below.
