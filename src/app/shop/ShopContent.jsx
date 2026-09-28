@@ -1,6 +1,6 @@
 "use client";
 import { useSearchParams } from "next/navigation";
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { Loader2, Phone } from "lucide-react";
 import ProductCard from "@/components/ProductCard";
 import SectionHeading from "@/components/SectionHeading";
@@ -8,16 +8,48 @@ import ShopFilterBar from "@/components/ShopFilterBar";
 import { extractProductDetails } from "@/lib/utils";
 import { trackViewItemList } from "@/lib/ecommerce";
 
-function ShopBody() {
+const MAX_RETRIES = 3;
+
+function ProductSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card overflow-hidden animate-pulse">
+      <div className="aspect-[4/3] bg-muted" />
+      <div className="p-5 space-y-3">
+        <div className="h-4 bg-muted rounded w-1/3" />
+        <div className="h-5 bg-muted rounded w-2/3" />
+        <div className="h-4 bg-muted rounded w-1/2" />
+        <div className="h-10 bg-muted rounded-full w-full mt-4" />
+      </div>
+    </div>
+  );
+}
+
+function ShopBody({ initialProducts = [] }) {
   const searchParams = useSearchParams();
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const hasInitial = initialProducts.length > 0;
+  const [products, setProducts] = useState(hasInitial ? initialProducts : []);
+  const [loading, setLoading] = useState(!hasInitial);
   const [fetchError, setFetchError] = useState(false);
-  const [brands, setBrands] = useState([]);
+  const [brands, setBrands] = useState(() => {
+    if (hasInitial) {
+      return Array.from(new Set(initialProducts.map((p) => p.brand).filter(Boolean)));
+    }
+    return [];
+  });
   const [seatFilter, setSeatFilter] = useState("All");
-  const [makeFilter, setMakeFilter] = useState("All");
+  const [makeFilter, setMakeFilter] = useState(() => {
+    const make = searchParams.get("make");
+    if (make && hasInitial) {
+      const match = initialProducts.find(
+        (p) => p.brand && p.brand.toLowerCase() === make.toLowerCase(),
+      );
+      return match?.brand || make;
+    }
+    return "All";
+  });
   const [colorFilter, setColorFilter] = useState("All");
   const [categoryFilter, setCategoryFilter] = useState("Golf Carts");
+  const retryCount = useRef(0);
 
   useEffect(() => {
     const make = searchParams.get("make");
@@ -32,7 +64,8 @@ function ShopBody() {
     }
   }, [searchParams, brands]);
 
-  const fetchProducts = () => {
+  const fetchProducts = (isRetry = false) => {
+    if (!isRetry) retryCount.current = 0;
     setLoading(true);
     setFetchError(false);
     fetch("/api/products")
@@ -57,6 +90,7 @@ function ShopBody() {
         });
 
         setProducts(sorted);
+        retryCount.current = 0;
 
         const uniqueBrands = Array.from(
           new Set(sorted.map((p) => p.brand).filter(Boolean)),
@@ -73,12 +107,23 @@ function ShopBody() {
       })
       .catch((err) => {
         console.error("Error fetching products:", err);
+        retryCount.current += 1;
+        if (retryCount.current < MAX_RETRIES) {
+          setTimeout(() => fetchProducts(true), 1500 * retryCount.current);
+          return;
+        }
         setFetchError(true);
       })
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (retryCount.current === 0 || retryCount.current >= MAX_RETRIES) {
+          setLoading(false);
+        }
+      });
   };
 
-  useEffect(() => { fetchProducts(); }, []);
+  useEffect(() => {
+    if (!hasInitial) fetchProducts();
+  }, []);
 
   const hasAccessories = products.some((p) => p.isAccessory);
 
@@ -118,9 +163,6 @@ function ShopBody() {
     return seatMatch && makeMatch && colorMatch;
   });
 
-  // GA4 view_item_list — reports the grid on first load and again whenever a
-  // filter changes which products are actually on screen. Keyed on the id list
-  // rather than `filtered` itself, which is a fresh array every render.
   const filteredIds = filtered.map((p) => p.id).join(",");
   useEffect(() => {
     if (!filteredIds) return;
@@ -130,7 +172,6 @@ function ShopBody() {
 
   const handleCategoryChange = (cat) => {
     setCategoryFilter(cat);
-
     setSeatFilter("All");
     setMakeFilter("All");
     setColorFilter("All");
@@ -201,18 +242,21 @@ function ShopBody() {
             colorOptions={categoryColors}
             category={categoryFilter}
             count={filtered.length}
+            loading={loading}
           />
         )}
 
         {loading ?
-          <div className="flex justify-center py-32">
-            <Loader2 className="w-8 h-8 animate-spin text-accent" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <ProductSkeleton key={i} />
+            ))}
           </div>
         : fetchError ?
           <div className="text-center py-32">
             <p className="text-muted-foreground mb-4">Unable to load products. Please try again.</p>
             <button
-              onClick={fetchProducts}
+              onClick={() => fetchProducts()}
               className="px-6 py-2.5 bg-accent text-white font-semibold rounded-full hover:bg-accent/90 transition-colors"
             >
               Retry
@@ -233,16 +277,27 @@ function ShopBody() {
   );
 }
 
-export default function ShopContent() {
+export default function ShopContent({ initialProducts = [] }) {
   return (
     <Suspense
       fallback={
-        <div className="flex justify-center py-64">
-          <Loader2 className="w-8 h-8 animate-spin text-accent" />
+        <div className="pt-24 pb-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <SectionHeading
+              label="Our Inventory"
+              title="Shop Golf Carts"
+              description="Browse our full selection of new electric golf carts and street-legal LSVs from top brands."
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mt-16">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          </div>
         </div>
       }
     >
-      <ShopBody />
+      <ShopBody initialProducts={initialProducts} />
     </Suspense>
   );
 }

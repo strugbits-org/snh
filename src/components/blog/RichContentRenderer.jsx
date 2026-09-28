@@ -211,17 +211,18 @@ function RenderNode({ node, idx, postSlug }) {
       return (
         <ul key={idx} className="list-disc list-outside ml-5 mb-3 space-y-1">
           {(node.nodes || []).map((item, i) => (
-            <RenderListItem key={i} node={item} />
+            <RenderListItem key={i} node={item} postSlug={postSlug} />
           ))}
         </ul>
       );
     }
 
     case "ORDERED_LIST": {
+      const start = node.orderedListData?.start;
       return (
-        <ol key={idx} className="list-decimal list-outside ml-5 mb-3 space-y-1">
+        <ol key={idx} start={start} className="list-decimal list-outside ml-5 mb-3 space-y-1">
           {(node.nodes || []).map((item, i) => (
-            <RenderListItem key={i} node={item} />
+            <RenderListItem key={i} node={item} postSlug={postSlug} />
           ))}
         </ol>
       );
@@ -341,13 +342,15 @@ function RenderNode({ node, idx, postSlug }) {
   }
 }
 
-function RenderListItem({ node }) {
-  const paragraphs = (node.nodes || []).filter((n) => n.type === "PARAGRAPH");
+function RenderListItem({ node, postSlug }) {
   return (
     <li className="text-base leading-7 text-muted-foreground">
-      {paragraphs.map((p, i) => (
-        <span key={i}>{renderInlineNodes(p.nodes)}</span>
-      ))}
+      {(node.nodes || []).map((child, i) => {
+        if (child.type === "PARAGRAPH") {
+          return <span key={i}>{renderInlineNodes(child.nodes)}</span>;
+        }
+        return <RenderNode key={i} node={child} idx={i} postSlug={postSlug} />;
+      })}
     </li>
   );
 }

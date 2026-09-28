@@ -2,6 +2,8 @@ import { wixClient } from "@/lib/wixClient";
 import { extractProductDetails } from "@/lib/utils";
 import ShopContent from "./ShopContent";
 
+export const revalidate = 300;
+
 async function getProducts() {
   try {
     const [productsRes, collectionsRes] = await Promise.all([
@@ -16,7 +18,7 @@ async function getProducts() {
       )
       .map((item) => extractProductDetails(item, collections));
   } catch (err) {
-    console.error("Error fetching products for shop schema:", err);
+    console.error("Error fetching products for shop:", err);
     return [];
   }
 }
@@ -25,6 +27,14 @@ export default async function Shop({ searchParams }) {
   const sp = (await searchParams) || {};
   const makeParam = sp.make;
   const makeLower = makeParam?.toLowerCase();
+
+  const products = await getProducts();
+
+  const sorted = [...products].sort((a, b) => {
+    if (a.inStock && !b.inStock) return -1;
+    if (!a.inStock && b.inStock) return 1;
+    return 0;
+  });
 
   let itemListName = "Electric Golf Carts for Sale — SNH Golf Carts LLC";
   let itemListDesc =
@@ -57,8 +67,7 @@ export default async function Shop({ searchParams }) {
       },
     ];
   } else {
-    const products = await getProducts();
-    itemListElement = products.map((p, idx) => ({
+    itemListElement = sorted.map((p, idx) => ({
       "@type": "ListItem",
       "position": idx + 1,
       "url": `https://www.snhgolfcarts.com/product/${p.slug || p.id}`,
@@ -83,7 +92,7 @@ export default async function Shop({ searchParams }) {
           __html: JSON.stringify(itemListSchema).replace(/</g, "\\u003c"),
         }}
       />
-      <ShopContent />
+      <ShopContent initialProducts={sorted} />
     </>
   );
 }

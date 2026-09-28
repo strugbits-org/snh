@@ -38,6 +38,7 @@ export default function ShopFilterBar({
   count,
   colorOptions = [],
   category = "Golf Carts",
+  loading = false,
 }) {
   const makeOptions = ["All", ...brands.filter((b) => b !== "All")];
   const colors = ["All", ...colorOptions];
@@ -86,10 +87,14 @@ export default function ShopFilterBar({
         {/* Item Count */}
         <div className="hidden md:block w-px self-stretch bg-border mx-4" />
         <div className="flex items-center shrink-0">
-          <span className="text-sm text-muted-foreground">
-            Showing <span className="font-semibold text-foreground">{count}</span>{" "}
-            {count === 1 ? "item" : "items"}
-          </span>
+          {loading ? (
+            <div className="h-5 w-24 bg-muted rounded animate-pulse" />
+          ) : (
+            <span className="text-sm text-muted-foreground">
+              Showing <span className="font-semibold text-foreground">{count}</span>{" "}
+              {count === 1 ? "item" : "items"}
+            </span>
+          )}
         </div>
       </div>
     </div>
